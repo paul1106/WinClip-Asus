@@ -44,15 +44,20 @@ if __name__ == '__main__':
     args = get_args()
 
     os.environ['CURL_CA_BUNDLE'] = ''
-    os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu_id)
+    # Only set CUDA_VISIBLE_DEVICES if not already set by the caller
+    if 'CUDA_VISIBLE_DEVICES' not in os.environ:
+        os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu_id)
 
     seeds = [111, 333, 999]
     setup_seed(seeds[args.experiment_indx])
 
     device = 'cpu' if args.use_cpu else 'cuda:0'
 
-    # Load model once
-    logger.info('Loading model...')
+    print(f'[run_winclip] dataset={args.dataset}  k_shot={args.k_shot}  '
+          f'shot_mode={args.shot_mode}  device={device}  '
+          f'CUDA_VISIBLE_DEVICES={os.environ.get("CUDA_VISIBLE_DEVICES")}',
+          flush=True)
+    print('[run_winclip] Loading model (this may take ~30s)...', flush=True)
     model = WinClipAD(
         out_size_h=args.resolution,
         out_size_w=args.resolution,
@@ -64,7 +69,7 @@ if __name__ == '__main__':
         img_cropsize=args.img_cropsize,
     )
     model = model.to(device)
-    logger.info('Model loaded.')
+    print('[run_winclip] Model loaded.', flush=True)
 
     # Shared kwargs passed to eval_one_class for each class
     eval_kwargs = {
@@ -86,9 +91,10 @@ if __name__ == '__main__':
         seed = DATASET_SEED_BASE + args.experiment_indx
         pred_dir_base = f'{pred_dir_base}_seed{seed}'
 
-    for cls in dataset_classes[args.dataset]:
-        logger.info(f'===== {cls} =====')
+    classes = dataset_classes[args.dataset]
+    for i, cls in enumerate(classes, 1):
+        print(f'[run_winclip] [{i}/{len(classes)}] {cls}', flush=True)
         pred_dir = f'{pred_dir_base}/{cls}' if pred_dir_base else None
         eval_one_class(model, device, cls, eval_kwargs, pred_dir=pred_dir)
 
-    logger.info('All classes done.')
+    print('[run_winclip] All classes done.', flush=True)

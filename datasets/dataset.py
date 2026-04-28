@@ -55,4 +55,4 @@ class CLIPDataset(Dataset):
 
         img_name = f'{self.category}-{img_type}-{os.path.basename(img_path[:-4])}'
 
-        return img, gt, label, img_name, img_type
+        return img, gt, label, img_name, img_type, img_path

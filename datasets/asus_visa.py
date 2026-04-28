@@ -23,10 +23,11 @@ def _instance_of(img_path):
     return img_path.split('/')[1]
 
 
-def _find_closest_instance(target, candidates):
+def _find_closest_instance(target, candidates, rng):
     """
     Find the closest train instance to a test instance by name similarity.
     Priority: exact match > same ref_des > same board_code > sequence similarity.
+    rng must be a seeded random.Random instance to ensure reproducibility.
     """
     if target in candidates:
         return target
@@ -37,13 +38,13 @@ def _find_closest_instance(target, candidates):
 
     same_ref = [c for c in candidates if c.split('@')[0] == ref_des]
     if same_ref:
-        return random.choice(same_ref)
+        return rng.choice(same_ref)
 
     if board_code:
         same_board = [c for c in candidates
                       if len(c.split('@')) > 1 and c.split('@')[1] == board_code]
         if same_board:
-            return random.choice(same_board)
+            return rng.choice(same_board)
 
     return max(candidates, key=lambda c: SequenceMatcher(None, target, c).ratio())
 
@@ -114,7 +115,7 @@ def get_instance_gallery_map(category, experiment_indx=0):
     rng = random.Random(42 + experiment_indx)
     gallery_map = {}
     for test_inst in test_instances:
-        closest = _find_closest_instance(test_inst, train_instances)
+        closest = _find_closest_instance(test_inst, train_instances, rng)
         entry = rng.choice(train_inst_map[closest])
         gallery_map[test_inst] = os.path.join(root, entry['img_path'])
 

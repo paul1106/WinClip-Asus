@@ -187,6 +187,34 @@ def test_instance_shot(model, category, device, is_vis, img_dir, cal_pro,
     return metric_cal(np.array(scores), gt_list, gt_mask_list, cal_pro=cal_pro)
 
 
+def eval_one_class(model, device, cls, kwargs, pred_dir=None):
+    """Run evaluation for one class on an already-initialised model."""
+    kw = {**kwargs, 'class_name': cls}
+    shot_mode = kw.get('shot_mode', 'component')
+
+    if shot_mode == 'instance':
+        gallery_map = get_instance_gallery_map(cls, kw['experiment_indx'])
+        return test_instance_shot(
+            model, cls, device,
+            is_vis=kw.get('vis', False), img_dir=None,
+            cal_pro=kw.get('cal_pro', False),
+            gallery_map=gallery_map, resolution=kw['resolution'],
+            batch_size=kw['batch_size'], pred_dir=pred_dir,
+        )
+    else:
+        train_dataloader = None
+        if kw['k_shot'] > 0:
+            train_dataloader, _ = get_dataloader_from_args(phase='train', perturbed=False, **kw)
+        test_dataloader, _ = get_dataloader_from_args(phase='test', perturbed=False, **kw)
+        return test(
+            model, test_dataloader, device,
+            is_vis=kw.get('vis', False), img_dir=None,
+            class_name=cls, cal_pro=kw.get('cal_pro', False),
+            train_data=train_dataloader, resolution=kw['resolution'],
+            pred_dir=pred_dir,
+        )
+
+
 def main(args):
     kwargs = vars(args)
 
